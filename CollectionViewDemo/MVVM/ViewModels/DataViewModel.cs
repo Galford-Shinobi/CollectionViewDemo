@@ -1,14 +1,43 @@
 ﻿using CollectionViewDemo.MVVM.Models;
+using PropertyChanged;
 using System.Collections.ObjectModel;
+using System.Windows.Input;
 
 namespace CollectionViewDemo.MVVM.ViewModels
 {
+    [AddINotifyPropertyChangedInterface]
     public class DataViewModel
     {
-        public ObservableCollection<Product> Products { get; set; }
+        public ObservableCollection<Product> Products { get; set; } =
+            new ObservableCollection<Product>();
+        public bool IsRefreshing { get; set; }
+
+        public ICommand RefreshCommand =>
+               new Command(async () =>
+               {
+                   IsRefreshing = true;
+                   await Task.Delay(3000);
+                   RefreshItems();
+                   IsRefreshing = false;
+               });
+        public ICommand ThresholdReachedCommand => 
+            new Command( async ()=>{
+                RefreshItems(Products.Count);
+            });
+
+        public ICommand DeleteCommand =>
+            new Command((p) => {
+                Products.Remove((Product)p);
+            });
+
         public DataViewModel()
         {
-            Products = new ObservableCollection<Product>
+            RefreshItems();
+        }
+        private void RefreshItems(int lastIndex = 0) {
+
+            int numberOfItemsPerPage = 10;
+            var items = new ObservableCollection<Product>
                {
                     new Product
                      {
@@ -421,6 +450,16 @@ namespace CollectionViewDemo.MVVM.ViewModels
                          Stock = 9
                      },
                };
+
+            var pageItems =
+                    items.Skip(lastIndex)
+                    .Take(numberOfItemsPerPage);
+
+            foreach (var item in pageItems)
+            {
+                Products.Add(item);
+            }
+
         }
     }
 }
